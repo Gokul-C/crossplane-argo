@@ -1,0 +1,55 @@
+
+---
+# Create VPC
+apiVersion: compute.gcp.upbound.io/v1beta1
+kind: Network
+metadata:
+  annotations:
+    meta.upbound.io/example-id: compute/v1beta1/routerinterface
+    upjet.upbound.io/manual-intervention: Dependant reference types not currently supported
+  labels:
+    testing.upbound.io/example-name: router-interface
+  name: crossplane-vpc
+spec:
+  forProvider:
+    autoCreateSubnetworks: false
+    routingMode: 'REGIONAL'
+---
+# Create Subnet
+apiVersion: compute.gcp.upbound.io/v1beta1
+kind: Subnetwork
+metadata:
+  annotations:
+    meta.upbound.io/example-id: compute/v1beta1/subnetwork
+  labels:
+    testing.upbound.io/example-name: example_subnet
+  name: crossplane-subnet
+spec:
+  forProvider:
+    ipCidrRange: 10.2.0.0/16
+    networkRef:
+      name: crossplane-vpc  # Reference to the VPC
+    region: us-central1
+    secondaryIpRange:
+      - ipCidrRange: 192.168.10.0/24
+        rangeName: test-secondary-range-update1
+---
+# Create Cluster
+apiVersion: container.gcp.upbound.io/v1beta1
+kind: Cluster
+metadata:
+  annotations:
+    meta.upbound.io/example-id: container/v1beta1/cluster
+  labels:
+    testing.upbound.io/example-name: cluster
+  name: crossplane-cluster
+spec:
+  forProvider:
+    initialNodeCount: 1
+    network: "projects/hpe-managed-services/global/networks/crossplane-vpc"
+    subnetwork: "projects/hpe-managed-services/regions/us-central1/subnetworks/crossplane-subnet"
+    location: us-central1
+    monitoringService: monitoring.googleapis.com/kubernetes
+  writeConnectionSecretToRef:
+    name: gke-crossplane-cluster
+    namespace: default
